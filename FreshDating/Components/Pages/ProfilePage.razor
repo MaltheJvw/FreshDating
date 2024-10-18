@@ -1,0 +1,308 @@
+﻿@page "/profile/{ProfileId:int}"
+@using Microsoft.AspNetCore.Components
+@using FreshDating.Model
+@using FreshDating.Services
+@inject NavigationManager NavigationManager
+@inject ProfileService ProfileService
+@inject ICityService CityService
+@inject IGenderService GenderService
+@inject ProfileStateService ProfileStateService
+
+
+@if (profileModel != null)
+{
+    @if (isEditMode)
+    {
+        <EditForm Model="@profileModel" OnValidSubmit="HandleSave">
+            <DataAnnotationsValidator />
+            <ValidationSummary />
+
+            <div class="form-group">
+                <label for="aboutMe">About Me</label>
+                <InputText id="aboutMe" class="form-control" @bind-Value="profileModel.AboutMe" />
+            </div>
+
+            <div class="form-group">
+                <label for="profilePicture">Profile Picture URL</label>
+                <InputText id="profilePicture" class="form-control" @bind-Value="profileModel.ProfilePicture" />
+            </div>
+
+            <div class="form-group">
+                <label for="smokerStatus">Smoker Status</label>
+                <InputSelect id="smokerStatus" class="form-control" @bind-Value="profileModel.SmokerStatus">
+                    @foreach (var status in Enum.GetValues(typeof(SmokerStatus)))
+                    {
+                        <option value="@status">@status</option>
+                    }
+                </InputSelect>
+            </div>
+
+            <div class="form-group">
+                <label for="height">Height (cm)</label>
+                <InputNumber id="height" class="form-control" @bind-Value="profileModel.Height" />
+            </div>
+
+            <div class="form-group">
+                <label for="weight">Weight (kg)</label>
+                <InputNumber id="weight" class="form-control" @bind-Value="profileModel.Weight" />
+            </div>
+
+            <div class="form-group">
+                <label for="gender">Gender</label>
+                <InputSelect id="gender" class="form-control" @bind-Value="profileModel.GenderId">
+                    @foreach (var gender in genders)
+                    {
+                        <option value="@gender.GenderId">@gender.GenderName</option>
+                    }
+                </InputSelect>
+            </div>
+
+            <div class="form-group">
+                <label for="city">City</label>
+                <InputSelect id="city" class="form-control" @bind-Value="profileModel.CityId">
+                    @foreach (var city in cities)
+                    {
+                        <option value="@city.CityId">@city.CityName</option>
+                    }
+                </InputSelect>
+            </div>
+
+            <button type="submit" class="btn btn-primary">Save</button>
+        </EditForm>
+    }
+    else
+    {
+        <div class="profile-card">
+            
+            
+            @if (!string.IsNullOrEmpty(profileModel.ProfilePicture))
+            {
+                <img src="@profileModel.ProfilePicture" alt="Profile Picture" class="profile-img" />
+            }
+            else
+            {
+                <img src="/images/default-profile.png" alt="Profile Picture" class="profile-img" />
+            }
+            <h2>@profileModel.FirstName</h2>
+
+            <div class="about-me-card">
+                <h3>About Me:</h3>
+                <p>@profileModel.AboutMe</p>
+            </div>
+
+            <p><strong>Gender:</strong> @profileModel.Gender?.GenderName</p>
+            <p><strong>Height:</strong> @profileModel.Height cm</p>
+            <p><strong>Weight:</strong> @profileModel.Weight kg</p>
+            <p><strong>City:</strong> @profileModel.City?.CityName</p>
+            <p><strong>Smoker Status:</strong> @profileModel.SmokerStatus</p>
+
+            @if (ProfileStateService.ProfileId.HasValue && ProfileStateService.ProfileId.Value != ProfileId)
+            {
+                <button class="btn btn-secondary" @onclick="LikeProfile">Like</button>
+            }
+
+            <button class="btn btn-primary" @onclick="ToggleEditMode">Edit</button>
+        </div>
+    }
+}
+
+<style>
+    .profile-card {
+        max-width: 800px;
+        margin: 20px auto;
+        padding: 20px;
+        border: 1px solid #ddd;
+        border-radius: 12px;
+        background-color: #ffffff;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+
+        .profile-card img {
+            display: block;
+            margin: 20px auto; /* Center the image horizontally */
+            max-width: 300px; /* Size the image */
+            max-height: 300px;
+            border-radius: 12px;
+            object-fit: cover;
+        }
+
+        .profile-card h2 {
+            text-align: center;
+            color: #333;
+            margin: 10px 0;
+        }
+
+    .profile-info {
+        margin-top: 20px;
+        padding: 15px;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        background-color: #f9f9f9;
+        text-align: left; /* Align text to the left */
+    }
+
+
+
+    .form-label {
+        font-weight: bold;
+        color: #444;
+    }
+
+    .form-control, .form-select {
+        border-radius: 8px;
+        border: 1px solid #ccc;
+        padding: 10px;
+        font-size: 16px;
+        width: 100%;
+        box-sizing: border-box;
+    }
+
+        .form-control:focus, .form-select:focus {
+            border-color: #007bff;
+            box-shadow: 0 0 0 0.2rem rgba(38, 143, 255, 0.25);
+        }
+
+    .btn-primary {
+        background-color: #007bff;
+        border-color: #007bff;
+        font-size: 16px;
+    }
+
+        .btn-primary:hover {
+            background-color: #0056b3;
+            border-color: #004085;
+        }
+
+    .btn-secondary {
+        background-color: #6c757d;
+        border-color: #6c757d;
+        font-size: 16px;
+    }
+
+        .btn-secondary:hover {
+            background-color: #5a6268;
+            border-color: #545b62;
+        }
+
+    .profile-info p {
+        font-size: 16px;
+        margin: 10px 0;
+        color: #555;
+    }
+
+    .profile-info strong {
+        color: #333;
+    }
+
+    .profile-card button {
+        display: block;
+        width: 100%;
+        margin-top: 10px;
+        font-size: 18px;
+    }
+
+    .about-me-box {
+        margin-top: 20px;
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        background-color: #f9f9f9;
+    }
+
+        .about-me-box textarea {
+            width: 100%;
+            height: 100px;
+            max-height: 100px;
+            border-radius: 8px;
+            border: 1px solid #ccc;
+            padding: 10px;
+            box-sizing: border-box;
+        }
+</style>
+
+@code {
+    [Parameter]
+    public int ProfileId { get; set; }
+
+    private ProfileModel? profileModel;
+    private bool isEditMode = false;
+    private List<City> cities = new List<City>();
+    private List<Gender> genders = new List<Gender>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Ensure ProfileId is coming from route parameters, not the state service
+        if (ProfileId <= 0) // Check if the ProfileId is valid from the route
+        {
+            if (ProfileStateService.ProfileId.HasValue)
+            {
+                ProfileId = ProfileStateService.ProfileId.Value; // Only set if ProfileId is invalid
+            }
+        }
+
+        profileModel = await ProfileService.LoadUserProfileAsync(ProfileId);
+        if (profileModel == null)
+        {
+            NavigationManager.NavigateTo("/");
+            return;
+        }
+
+        cities = await CityService.GetAllCitiesAsync();
+        genders = await GenderService.GetAllGendersAsync();
+    }
+
+    private async Task LikeProfile()
+    {
+        var currentUserId = ProfileStateService.ProfileId ?? 0;
+
+        if (currentUserId == 0) // Check if the user is not logged in
+        {
+            NavigationManager.NavigateTo("/login");
+            return;
+        }
+
+        if (currentUserId == ProfileId)
+        {
+            Console.WriteLine("You cannot like your own profile!");
+            return;
+        }
+
+        // Perform the Like action
+        var success = await ProfileService.LikeProfileAsync(currentUserId, ProfileId);
+        if (success)
+        {
+            // Optionally provide feedback
+            Console.WriteLine("Profile liked successfully!");
+        }
+        else
+        {
+            // Handle the failure case
+            Console.WriteLine("Failed to like profile.");
+        }
+    }
+
+    private void ToggleEditMode()
+    {
+        isEditMode = !isEditMode;
+    }
+
+    private async Task HandleSave()
+    {
+        try
+        {
+            await ProfileService.UpdateProfileAsync(profileModel);
+            isEditMode = false;
+            profileModel = await ProfileService.LoadUserProfileAsync(ProfileId);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error updating profile: {ex.Message}");
+        }
+    }
+
+    private void NavigateToFindPartner()
+    {
+        Console.WriteLine($"Navigating to /find-partner/{ProfileId}");
+        NavigationManager.NavigateTo($"/find-partner/{ProfileId}");
+    }
+}

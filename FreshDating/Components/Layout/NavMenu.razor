@@ -1,0 +1,98 @@
+﻿@page "/navmenu"
+@using FreshDating.Services
+@using FreshDating.Model
+@inject NavigationManager NavigationManager
+@inject UserService UserService
+@inject ProfileStateService ProfileStateService
+
+<div class="top-row ps-3 navbar navbar-dark">
+    <div class="container-fluid">
+        <a class="navbar-brand" href="/">FreshDating</a>
+    </div>
+</div>
+
+<input type="checkbox" title="Navigation menu" class="navbar-toggler" />
+
+<div class="nav-scrollable" onclick="document.querySelector('.navbar-toggler').click()">
+    <nav class="flex-column">
+        @if (isLoggedIn)
+        {
+            <div class="nav-item px-3">
+                <button class="nav-link btn btn-link" @onclick="NavigateToProfile">
+                    <span class="bi bi-person-fill-nav-menu" aria-hidden="true"></span> Profile
+                </button>
+            </div>
+
+            <div class="nav-item px-3">
+                <button class="nav-link btn btn-link" @onclick="NavigateToFindPartner">
+                    <span class="bi bi-heart-fill-nav-menu" aria-hidden="true"></span> Find Partner
+                </button>
+            </div>
+
+            <div class="nav-item px-3">
+                <button class="nav-link btn btn-link" @onclick="NavigateToLikes">
+                    <span class="bi bi-heart-fill-nav-menu" aria-hidden="true"></span> Likes
+                </button>
+            </div>
+
+            <div class="nav-item px-3">
+                <button class="nav-link btn btn-link" @onclick="Logout">
+                    <span class="bi bi-box-arrow-right-nav-menu" aria-hidden="true"></span> Logout
+                </button>
+            </div>
+        }
+    </nav>
+</div>
+
+@code {
+    [Parameter]
+    public int ProfileId { get; set; }
+
+    private bool isLoggedIn;
+
+    protected override void OnInitialized()
+    {
+        // Check login state from UserService
+        isLoggedIn = UserService.IsLoggedIn;
+        UserService.OnLoginStateChanged += UpdateLoginState;
+    }
+
+    private void UpdateLoginState()
+    {
+        // Update login state
+        isLoggedIn = UserService.IsLoggedIn;
+        InvokeAsync(StateHasChanged); // Notify the UI to re-render
+    }
+
+    private void NavigateToProfile()
+    {
+        
+        NavigationManager.NavigateTo($"/profile/{ProfileStateService.ProfileId.Value}");
+    }
+
+    private void NavigateToFindPartner()
+    {
+        NavigationManager.NavigateTo($"/find-partner/{ProfileStateService.ProfileId.Value}");
+    }
+
+    private void NavigateToLikes()
+    {
+        
+        NavigationManager.NavigateTo($"/like/{ProfileStateService.ProfileId.Value}");
+    }
+
+    private async Task Logout()
+    {
+        await UserService.LogoutAsync();
+        isLoggedIn = false;
+        ProfileStateService.ProfileId = null; // Clear the ProfileId on logout
+        NavigationManager.NavigateTo("/");
+    }
+
+    public void Dispose()
+    {
+        UserService.OnLoginStateChanged -= UpdateLoginState;
+    }
+
+}
+

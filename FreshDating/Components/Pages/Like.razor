@@ -1,0 +1,40 @@
+﻿@page "/like/{ProfileId:int}"
+@using FreshDating.Services
+@using FreshDating.Model
+@inject ProfileService ProfileService
+@inject ProfileStateService ProfileStateService
+
+
+@if (likesReceived != null && likesReceived.Any())
+{
+    <ul class="list-group">
+        @foreach (var profile in likesReceived)
+        {
+            <li class="list-group-item">
+                <p><strong>City:</strong> @profile.City?.CityName</p>
+                <p><strong>Gender:</strong> @profile.Gender?.GenderName</p>
+            </li>
+        }
+    </ul>
+}
+else
+{
+    <p>No likes received.</p>
+}
+
+@code {
+
+    [Parameter]
+    public int ProfileId { get; set; }
+
+    private List<Profile> likesReceived = new List<Profile>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        var currentProfileId = ProfileStateService.ProfileId;
+        if (currentProfileId.HasValue)
+        {
+            likesReceived = await ProfileService.GetLikesReceivedAsync(currentProfileId.Value);
+        }
+    }
+}

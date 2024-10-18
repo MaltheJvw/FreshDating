@@ -1,0 +1,103 @@
+﻿@page "/find-partner/{ProfileId:int}"
+@using Microsoft.AspNetCore.Components
+@using FreshDating.Model
+@using FreshDating.Services
+@inject FilterService FilterService
+@inject ProfileService ProfileService
+@inject NavigationManager NavigationManager
+
+
+<div class="form-group">
+    <label for="filterCity">City</label>
+    <InputSelect id="filterCity" class="form-control" @bind-Value="selectedCityId">
+        <option value="">-- Select City --</option>
+        @foreach (var city in cities)
+        {
+            <option value="@city.CityId">@city.CityName</option>
+        }
+    </InputSelect>
+</div>
+
+<div class="form-group">
+    <label for="filterGender">Gender</label>
+    <InputSelect id="filterGender" class="form-control" @bind-Value="selectedGenderId">
+        <option value="">-- Select Gender --</option>
+        @foreach (var gender in genders)
+        {
+            <option value="@gender.GenderId">@gender.GenderName</option>
+        }
+    </InputSelect>
+</div>
+
+<div class="form-group">
+    <label for="minAge">Minimum Age</label>
+    <InputNumber id="minAge" class="form-control" @bind-Value="minAge" />
+</div>
+
+<div class="form-group">
+    <label for="maxAge">Maximum Age</label>
+    <InputNumber id="maxAge" class="form-control" @bind-Value="maxAge" />
+</div>
+
+<button class="btn btn-primary" @onclick="FilterProfiles">Apply Filters</button>
+
+<hr />
+
+@if (profiles != null && profiles.Any())
+{
+    <ul class="list-group">
+        @foreach (var profile in profiles)
+        {
+            <li class="list-group-item">
+                <h5>@profile.AboutMe</h5>
+                <p><strong>City:</strong> @profile.City?.CityName</p>
+                <p><strong>Gender:</strong> @profile.Gender?.GenderName</p>
+                <button class="btn btn-secondary" @onclick="() => ViewProfile(profile.ProfileId)">View Profile</button>
+            </li>
+        }
+    </ul>
+}
+else
+{
+    <p>No profiles found matching your filters.</p>
+}
+
+@code {
+    [Parameter]
+    public int ProfileId { get; set; }  // Track the logged-in user's ProfileId
+
+    private List<ProfileModel> profiles = new List<ProfileModel>();
+    private List<City> cities = new List<City>();
+    private List<Gender> genders = new List<Gender>();
+
+    private int? selectedCityId;
+    private int? selectedGenderId;
+    private int? minAge;
+    private int? maxAge;
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Load cities and genders for the filter
+        cities = await ProfileService.GetAllCitiesAsync();
+        genders = await ProfileService.GetAllGendersAsync();
+
+        // Fetch all profiles initially (excluding the logged-in user's profile)
+        await LoadProfilesAsync();
+    }
+
+    private async Task LoadProfilesAsync()
+    {
+        profiles = await FilterService.FindPartnerAsync(ProfileId, null, null, null, null);
+    }
+
+    private async Task FilterProfiles()
+    {
+        profiles = await FilterService.FindPartnerAsync(ProfileId, selectedGenderId, selectedCityId, minAge, maxAge);
+    }
+
+    private void ViewProfile(int profileId)
+    {
+        // Navigate to the selected profile page
+        NavigationManager.NavigateTo($"/profile/{profileId}");
+    }
+}
